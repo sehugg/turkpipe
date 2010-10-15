@@ -45,8 +45,10 @@ title = None
 description = None
 
 s3conn = Connection()
-bucket = s3conn.get_bucket(bucketname)
-if not bucket:
+# Bucket try/except contributed by idm 6/22/2010
+try:
+  bucket = s3conn.get_bucket(bucketname)
+except boto.exception.S3ResponseError:
   print "The S3 bucket '%s' has been created." % (bucketname)
   bucket = s3conn.create_bucket(bucketname)
 
