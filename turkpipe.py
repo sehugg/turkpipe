@@ -128,8 +128,8 @@ def usage():
    -A, --approve          Approve all HITs automatically as they're completed.
    -a, --autoapprove=     Automatically approve HITs after the specified 
                           number of seconds. Default is 86400.
-   -w, --wait=            Wait the specified number of seconds for all HITs 
-                          to be completed.
+   -w, --wait=            Wait the specified number of seconds for the
+                          specified HITs to be completed.
    -X, --panic            Cancel all outstanding HITs.
    """  
    
@@ -199,8 +199,10 @@ def makeBinaryContentQuestion(fn,ctype):
   ct = ctype.split('/')
   if ct[0] in ('image','video','audio'):
     bin = uploadfile(fn)
-    qn_content = QuestionContent(title=title, text=description,
-      binary=bin, binary_type=ct[0], binary_subtype=ct[1], binary_alttext=title)
+    qn_content = QuestionContent()
+    qn_content.append_field('Title',title)
+    qn_content.append_field('Text',description)
+    qn_content.append(Binary(ct[0], ct[1], bin, title))
     qn = Question(content=qn_content, identifier=fn,
                   answer_spec=AnswerSpecification(FreeTextAnswer()))
     return QuestionForm([qn])
