@@ -1,6 +1,8 @@
 # turkpipe
 Turkpipe allows you to submit batches of jobs to Mechanical Turk using the command line.
 
+*** USE AT YOUR OWN RISK!!! THIS TOOL MAY SPEND YOUR MONEY!!! ***
+
 Dependencies
 
     python-boto

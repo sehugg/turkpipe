@@ -27,13 +27,29 @@ from boto.mturk.question import *
 from boto.mturk.price import *
 from boto.mturk.qualification import *
 from boto.s3 import *
+from boto.s3.connection import *
 from os.path import *
 import sys,getopt,re,cPickle,urllib,string,time,os,uuid,mimetypes,codecs
 import gdbm
 from BeautifulSoup import BeautifulSoup,Tag
 from xml.sax.saxutils import escape
+import platform
 
-bucketname = 'com.voxilate.mturk'
+def getNodeName():
+  """
+  >>> type(getNodeName())
+  <type 'str'>
+  """
+  name = platform.node()
+  if not name:
+    name = socket.gethostname()
+    if not name:
+      name = os.environ.get('COMPUTERNAME')
+  assert(name)
+  return name
+
+# create a default bucket name based on hostname
+bucketname = 'turkpipe_%s' % getNodeName().replace('.','_')
 
 # redirect stdout
 real_stdout = codecs.getwriter('utf8')(sys.stdout)
@@ -44,7 +60,7 @@ testmode = True
 title = None
 description = None
 
-s3conn = Connection()
+s3conn = S3Connection()
 # Bucket try/except contributed by idm 6/22/2010
 try:
   bucket = s3conn.get_bucket(bucketname)
@@ -172,7 +188,9 @@ def makeHTMLQuestion(fn, htmldata):
   
 def makeSimpleQuestion(fn):
   text = open(fn,'r').read()
-  qn_content = QuestionContent(title=title, text=description + "\n\n" + text)
+  qn_content = QuestionContent()
+  qn_content.append_field('Title',title)
+  qn_content.append_field('Text',description + "\n\n" + text)
   qn = Question(content=qn_content, identifier=fn,
                 answer_spec=AnswerSpecification(FreeTextAnswer()))
   return QuestionForm([qn])
@@ -198,7 +216,7 @@ def getQuestionForFile(fn):
     content_type = mimetypes.guess_type(fn)
     #print '%s is %s' % (fn,str(content_type))
     q = None
-    if content_type:
+    if content_type and content_type[0]:
       q = makeBinaryContentQuestion(fn,content_type[0])
     if not q:
       q = makeSimpleQuestion(fn)
