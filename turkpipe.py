@@ -201,8 +201,8 @@ def makeBinaryContentQuestion(fn,ctype):
     bin = uploadfile(fn)
     qn_content = QuestionContent()
     qn_content.append_field('Title',title)
-    qn_content.append_field('Text',description)
     qn_content.append(Binary(ct[0], ct[1], bin, title))
+    qn_content.append_field('Text',description)
     qn = Question(content=qn_content, identifier=fn,
                   answer_spec=AnswerSpecification(FreeTextAnswer()))
     return QuestionForm([qn])
@@ -349,8 +349,14 @@ if __name__=='__main__':
       job = unpickle(jobs[key])
       n += 1
       print "Cancelling HIT",job.hitid
-      conn.disable_hit(job.hitid)
-      conn.dispose_hit(job.hitid)
+      try:
+        conn.disable_hit(job.hitid)
+      except:
+        print 'Error disabling %s: %s' % (job.hitid, sys.exc_info()[1])
+      try:
+        conn.dispose_hit(job.hitid)
+      except:
+        print 'Error disposing %s: %s' % (job.hitid, sys.exc_info()[1])
       if panic>=2:
         rs = conn.get_assignments(job.hitid)
         for ass in rs:
@@ -497,7 +503,7 @@ if __name__=='__main__':
           for b in a:
             i = 0
             # TODO: unicode
-            for k,v in b.fields:
+            for v in b.fields:
               if i>0:
                 real_stdout.write(',')
               i += 1
