@@ -68,8 +68,7 @@ except boto.exception.S3ResponseError:
   print "The S3 bucket '%s' has been created." % (bucketname)
   bucket = s3conn.create_bucket(bucketname)
 
-SUBMIT_JS = """<script type="text/javascript" language="JavaScript"><!--
-
+SUBMIT_JS = """
 // Given the ID of the assignmentId form field element, populate it
 // with the assignmentId parameter from the URL.  If no assignment ID
 // is present, inform the worker that the HIT is being previewed.
@@ -101,8 +100,7 @@ function verifyTurkSubmit(field_id)
   } else
     return true;
 }
-
-// --></script>"""
+"""
 
 ###
 
@@ -130,7 +128,7 @@ def usage():
                           number of seconds. Default is 86400.
    -w, --wait=            Wait the specified number of seconds for the
                           specified HITs to be completed.
-   -X, --panic            Cancel all outstanding HITs.
+   -X, --panic            Cancel all outstanding HITs. (-XX to double-panic)
    """  
    
 def safefn(fn):
@@ -151,7 +149,7 @@ def uploadfile(fn, data=None):
     key.set_contents_from_string(data, policy='public-read')
   else:
     key.set_contents_from_filename(fn, policy='public-read')
-  url = key.generate_url(86400, force_http=True, query_auth=False).replace(':443','')
+  url = key.generate_url(86400, query_auth=False)
   print 'Uploaded to',url
   return url
 
@@ -159,7 +157,10 @@ def makeHTMLQuestion(fn, htmldata):
   soup = BeautifulSoup(htmldata)
   #add JS
   soup.find('body')['onload'] = "populateAssignmentID('myAssignmentId')"
-  soup.find('head').insert(0, SUBMIT_JS)
+  scripttag = Tag(soup, "script")
+  scripttag['type'] = "text/javascript"
+  scripttag.string = "__SUBMIT_JS__"
+  soup.find('head').insert(0, scripttag)
   #replace forms
   forms = soup.findAll('form')
   if forms:
@@ -168,9 +169,9 @@ def makeHTMLQuestion(fn, htmldata):
         form['method'] = 'POST'
       if not form.has_key('action'):
         if testmode:
-          form['action'] = 'http://workersandbox.mturk.com/mturk/externalSubmit'
+          form['action'] = 'https://workersandbox.mturk.com/mturk/externalSubmit'
         else:
-          form['action'] = 'http://www.mturk.com/mturk/externalSubmit'
+          form['action'] = 'https://www.mturk.com/mturk/externalSubmit'
       if not form.has_key('onSubmit'):
         form['onSubmit'] = "return verifyTurkSubmit('myAssignmentId');"
       inputtag = Tag(soup,'input')
@@ -179,7 +180,8 @@ def makeHTMLQuestion(fn, htmldata):
       inputtag['id'] = 'myAssignmentId'
       inputtag['value'] = ''
       form.insert(0, inputtag)
-  mainurl = uploadfile(fn, str(soup))
+  html = str(soup).replace("__SUBMIT_JS__", SUBMIT_JS)
+  mainurl = uploadfile(fn, html)
   for sub in soup.findAll('img'):
     # TODO
     fn = dirname(fn) + '/' + sub['src']
