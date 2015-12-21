@@ -505,6 +505,8 @@ if __name__=='__main__':
           for b in a:
             i = 0
             # TODO: unicode
+            real_stdout.write(b.qid)
+            real_stdout.write('\t')
             for v in b.fields:
               if i>0:
                 real_stdout.write(',')
